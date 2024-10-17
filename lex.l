@@ -1,22 +1,41 @@
 %{
-#include <stdio.h>
+    int COMMENT = 0;
 %}
 
-%option noyywrap
+identifier [a-zA-Z][a-zA-Z0-9]*
+
+%%
+"//".*                       { printf("single-line comment\n"); }
+"/*"                         { COMMENT = 1; printf("multi-line comment start\n"); }
+"*/"                         { COMMENT = 0; printf("multi-line comment end\n"); }
+int |
+float |
+char                        { if (!COMMENT) printf("keyword: %s\n", yytext); }
+"+"                         { if (!COMMENT) printf("plus operator\n"); }
+"-"                         { if (!COMMENT) printf("minus operator\n"); }
+{identifier}                { if (!COMMENT) printf("identifier: %s\n", yytext); }
+[0-9]+                      { if (!COMMENT) printf("number: %s\n", yytext); }
+[ \t\n]+                    { /* Ignore whitespace */ }
+";"                         { if (!COMMENT) printf("semicolon\n"); }
+.                           { if (!COMMENT) printf("unknown character: %s\n", yytext); }
 
 %%
 
-// Patterns for keywords, operators, numbers, identifiers, and unknown characters
-"int"|"float"|"char"                { printf("Keyword: %s\n", yytext); }
-"+"|"-"|"*"|"/"                     { printf("Operator: %s\n", yytext); }
-[0-9]+                              { printf("Number: %s\n", yytext); }
-[a-zA-Z_][a-zA-Z0-9_]*              { printf("Identifier: %s\n", yytext); }
-\n                                  { /* Ignore new lines */ }
-.                                   { printf("Unknown: %s\n", yytext); }
-
-%%
-
-int main() {
-    while (yylex() != 0);  // Loop to continuously read input until EOF
+int main()
+{
+    FILE *file = fopen("input.c", "r");
+    if (!file)
+    {
+        printf("Could not open the file input.c\n");
+        return 1;
+    }
+    yyin = file;
+    yylex();
+    fclose(file);
     return 0;
+}
+
+int yywrap()
+{
+    return 1;
 }
