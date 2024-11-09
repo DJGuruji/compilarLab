@@ -9,6 +9,7 @@ int n;
 
 void findFirst(char, char[]);
 void findFollow(char, char[]);
+int hasEpsilon(char[]);
 
 int main() {
     int i;
@@ -39,11 +40,40 @@ void findFirst(char c, char first[]) {
 
     for (i = 0; i < n; i++) {
         if (prod[i][0] == c) {
-            char next = prod[i][2];
-            if (!isupper(next)) {
-                if (!strchr(first, next)) {
-                    first[j++] = next;
+            int k = 2;
+            int epsilon_in_all = 1;
+
+            while (prod[i][k]) {
+                char next = prod[i][k];
+                if (!isupper(next)) {
+                    if (!strchr(first, next)) {
+                        first[j++] = next;
+                    }
+                    epsilon_in_all = 0;
+                    break;
+                } else {
+                    char temp[MAX];
+                    findFirst(next, temp);
+
+                    int has_epsilon = 0;
+                    for (int m = 0; temp[m]; m++) {
+                        if (temp[m] != 'e' && !strchr(first, temp[m])) {
+                            first[j++] = temp[m];
+                        }
+                        if (temp[m] == 'e') {
+                            has_epsilon = 1;
+                        }
+                    }
+
+                    if (!has_epsilon) {
+                        epsilon_in_all = 0;
+                        break;
+                    }
                 }
+                k++;
+            }
+            if (epsilon_in_all && !strchr(first, 'e')) {
+                first[j++] = 'e';
             }
         }
     }
@@ -61,12 +91,10 @@ void findFollow(char c, char follow[]) {
             if (prod[i][k] == c) {
                 char next = prod[i][k + 1];
 
-                // Case 1: If 'c' is followed by a terminal.
                 if (next && !isupper(next) && !strchr(follow, next)) {
                     follow[j++] = next;
                 }
 
-                // Case 2: If 'c' is followed by a non-terminal.
                 if (next && isupper(next)) {
                     char firstNext[MAX];
                     findFirst(next, firstNext);
@@ -77,7 +105,6 @@ void findFollow(char c, char follow[]) {
                     }
                 }
 
-                // Case 3: If 'c' is at the end or followed by epsilon production.
                 if (!next || (next && strchr(prod[i] + k + 1, 'e'))) {
                     if (prod[i][0] != c) {
                         char followLHS[MAX];
@@ -93,4 +120,13 @@ void findFollow(char c, char follow[]) {
         }
     }
     follow[j] = '\0';
+}
+
+int hasEpsilon(char first[]) {
+    for (int i = 0; first[i]; i++) {
+        if (first[i] == 'e') {
+            return 1;
+        }
+    }
+    return 0;
 }
