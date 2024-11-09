@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 int flag = 0;
+int yylex(void);  // Declare yylex
+void yyerror(const char *s);  // Declare yyerror
 %}
 
 %token NUMBER

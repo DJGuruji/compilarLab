@@ -2,61 +2,40 @@
 #include <ctype.h>
 #include <string.h>
 
-int COMMENT = 0;  // To track multi-line comment state
-
 int is_keyword(const char *str) {
     return strcmp(str, "int") == 0 || strcmp(str, "float") == 0 || strcmp(str, "char") == 0;
 }
 
-int is_identifier_start(char ch) {
-    return isalpha(ch) || ch == '_';
-}
-
-int is_identifier_part(char ch) {
-    return isalnum(ch) || ch == '_';
-}
-
 void process_file(FILE *file) {
-    char ch;
-    char buffer[256];
-    int i = 0;
+    char ch, buffer[256];
+    int i = 0, in_comment = 0;
 
     while ((ch = fgetc(file)) != EOF) {
-        // Handle single-line comment
-        if (ch == '/' && (ch = fgetc(file)) == '/') {
+        if (in_comment) {  // If inside multi-line comment
+            if (ch == '*' && (ch = fgetc(file)) == '/') {
+                in_comment = 0;
+                printf("multi-line comment end\n");
+            }
+        } 
+        else if (ch == '/' && (ch = fgetc(file)) == '/') {  // Single-line comment
             printf("single-line comment\n");
             while ((ch = fgetc(file)) != EOF && ch != '\n');
         }
-        // Handle multi-line comment start
-        else if (ch == '/' && (ch = fgetc(file)) == '*') {
-            COMMENT = 1;
+        else if (ch == '/' && ch == '*') {  // Multi-line comment start
+            in_comment = 1;
             printf("multi-line comment start\n");
-            while (COMMENT && (ch = fgetc(file)) != EOF) {
-                if (ch == '*' && (ch = fgetc(file)) == '/') {
-                    COMMENT = 0;
-                    printf("multi-line comment end\n");
-                }
-            }
         }
-        // Handle keywords and identifiers
-        else if (is_identifier_start(ch)) {
+        else if (isalpha(ch) || ch == '_') {  // Keyword or identifier
             buffer[i++] = ch;
-            while ((ch = fgetc(file)) != EOF && is_identifier_part(ch)) {
+            while ((ch = fgetc(file)) != EOF && (isalnum(ch) || ch == '_')) {
                 buffer[i++] = ch;
             }
             buffer[i] = '\0';
             i = 0;
             ungetc(ch, file);
-            if (!COMMENT) {
-                if (is_keyword(buffer)) {
-                    printf("keyword: %s\n", buffer);
-                } else {
-                    printf("identifier: %s\n", buffer);
-                }
-            }
+            printf("%s: %s\n", is_keyword(buffer) ? "keyword" : "identifier", buffer);
         }
-        // Handle numbers
-        else if (isdigit(ch)) {
+        else if (isdigit(ch)) {  // Number
             buffer[i++] = ch;
             while ((ch = fgetc(file)) != EOF && isdigit(ch)) {
                 buffer[i++] = ch;
@@ -64,23 +43,14 @@ void process_file(FILE *file) {
             buffer[i] = '\0';
             i = 0;
             ungetc(ch, file);
-            if (!COMMENT) {
-                printf("number: %s\n", buffer);
-            }
+            printf("number: %s\n", buffer);
         }
-        // Handle operators and other symbols
-        else if (ch == '+') {
-            if (!COMMENT) printf("plus operator\n");
-        }
-        else if (ch == '-') {
-            if (!COMMENT) printf("minus operator\n");
-        }
-        else if (ch == ';') {
-            if (!COMMENT) printf("semicolon\n");
-        }
-        else if (!isspace(ch)) {
-            if (!COMMENT) printf("unknown character: %c\n", ch);
-        }
+        else if (ch == '+') printf("plus operator\n");
+        else if (ch == '-') printf("minus operator\n");
+        else if (ch == '*') printf("minus operator\n");
+        else if (ch == '/') printf("minus operator\n");
+        else if (ch == ';') printf("semicolon\n");
+        else if (!isspace(ch)) printf("unknown character: %c\n", ch);
     }
 }
 
